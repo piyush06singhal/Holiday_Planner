@@ -77,9 +77,12 @@ export const getPublicHolidays = api<PublicHolidaysRequest, PublicHolidaysRespon
     const { startDate, endDate, country = "IN" } = req;
     
     try {
+      console.log(`Fetching real public holidays for ${country} from ${startDate.toDateString()} to ${endDate.toDateString()}`);
       const holidays = await fetchPublicHolidays(startDate, endDate, country);
       const weekends = generateWeekends(startDate, endDate);
       const suggestedLongWeekends = generateLongWeekendSuggestions(holidays, startDate, endDate);
+      
+      console.log(`Found ${holidays.length} holidays and ${suggestedLongWeekends.length} long weekend opportunities`);
       
       return {
         holidays,
@@ -285,8 +288,52 @@ export const generateEvents = api<CalendarIntegrationRequest, { events: Calendar
 );
 
 async function fetchPublicHolidays(startDate: Date, endDate: Date, country: string): Promise<PublicHoliday[]> {
-  // In a real implementation, you would call a public holidays API
-  // For now, return fallback holidays
+  try {
+    // Use date-fns or similar to get year range
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+    
+    // Fetch holidays from a free public API
+    const holidays: PublicHoliday[] = [];
+    
+    for (let year = startYear; year <= endYear; year++) {
+      try {
+        // Using abstract API for public holidays (no API key required)
+        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${country}`);
+        
+        if (response.ok) {
+          const holidaysData = await response.json() as Array<{
+            date: string;
+            name: string;
+            global: boolean;
+          }>;
+          
+          holidaysData.forEach((holiday) => {
+            const holidayDate = new Date(holiday.date);
+            if (holidayDate >= startDate && holidayDate <= endDate) {
+              holidays.push({
+                date: holidayDate,
+                name: holiday.name,
+                type: holiday.global ? "national" as const : "public" as const,
+                description: `${holiday.name} - ${holiday.global ? 'National' : 'Public'} Holiday`
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch holidays for year ${year}:`, error);
+      }
+    }
+    
+    // If we got real holidays, return them; otherwise fallback
+    if (holidays.length > 0) {
+      return holidays;
+    }
+  } catch (error) {
+    console.error('Error fetching public holidays from API:', error);
+  }
+  
+  // Fallback to predefined holidays
   return getFallbackHolidays(startDate, endDate);
 }
 
@@ -294,31 +341,66 @@ function getFallbackHolidays(startDate: Date, endDate: Date): PublicHoliday[] {
   const holidays: PublicHoliday[] = [];
   const year = startDate.getFullYear();
   
-  // Major Indian holidays (approximate dates)
-  const indianHolidays = [
-    { month: 0, date: 1, name: "New Year's Day", type: "national" as const },
-    { month: 0, date: 26, name: "Republic Day", type: "national" as const },
-    { month: 2, date: 8, name: "Holi", type: "religious" as const },
-    { month: 3, date: 14, name: "Ram Navami", type: "religious" as const },
-    { month: 7, date: 15, name: "Independence Day", type: "national" as const },
-    { month: 8, date: 2, name: "Ganesh Chaturthi", type: "religious" as const },
-    { month: 9, date: 2, name: "Gandhi Jayanti", type: "national" as const },
-    { month: 9, date: 15, name: "Dussehra", type: "religious" as const },
-    { month: 10, date: 4, name: "Diwali", type: "religious" as const },
-    { month: 11, date: 25, name: "Christmas Day", type: "religious" as const }
-  ];
+  // Enhanced holiday data with more accurate dates for multiple years
+  const currentYear = year;
+  const holidaysByYear: { [key: number]: Array<{ month: number, date: number, name: string, type: "national" | "religious" | "public" }> } = {
+    2024: [
+      { month: 0, date: 1, name: "New Year's Day", type: "national" },
+      { month: 0, date: 26, name: "Republic Day", type: "national" },
+      { month: 2, date: 25, name: "Holi", type: "religious" },
+      { month: 3, date: 17, name: "Ram Navami", type: "religious" },
+      { month: 4, date: 1, name: "Labour Day", type: "national" },
+      { month: 7, date: 15, name: "Independence Day", type: "national" },
+      { month: 8, date: 7, name: "Ganesh Chaturthi", type: "religious" },
+      { month: 9, date: 2, name: "Gandhi Jayanti", type: "national" },
+      { month: 9, date: 24, name: "Dussehra", type: "religious" },
+      { month: 10, date: 12, name: "Diwali", type: "religious" },
+      { month: 11, date: 25, name: "Christmas Day", type: "religious" }
+    ],
+    2025: [
+      { month: 0, date: 1, name: "New Year's Day", type: "national" },
+      { month: 0, date: 26, name: "Republic Day", type: "national" },
+      { month: 2, date: 14, name: "Holi", type: "religious" },
+      { month: 3, date: 6, name: "Ram Navami", type: "religious" },
+      { month: 4, date: 1, name: "Labour Day", type: "national" },
+      { month: 7, date: 15, name: "Independence Day", type: "national" },
+      { month: 7, date: 27, name: "Ganesh Chaturthi", type: "religious" },
+      { month: 9, date: 2, name: "Gandhi Jayanti", type: "national" },
+      { month: 9, date: 12, name: "Dussehra", type: "religious" },
+      { month: 10, date: 1, name: "Diwali", type: "religious" },
+      { month: 11, date: 25, name: "Christmas Day", type: "religious" }
+    ]
+  };
+  
+  const indianHolidays = holidaysByYear[currentYear] || holidaysByYear[2024];
   
   indianHolidays.forEach(holiday => {
-    const holidayDate = new Date(year, holiday.month, holiday.date);
+    const holidayDate = new Date(currentYear, holiday.month, holiday.date);
     if (holidayDate >= startDate && holidayDate <= endDate) {
       holidays.push({
         date: holidayDate,
         name: holiday.name,
         type: holiday.type,
-        description: `${holiday.name} - Public Holiday`
+        description: `${holiday.name} - ${holiday.type === 'national' ? 'National' : holiday.type === 'religious' ? 'Religious' : 'Public'} Holiday`
       });
     }
   });
+  
+  // Add next year's holidays if the date range extends
+  if (endDate.getFullYear() > currentYear) {
+    const nextYearHolidays = holidaysByYear[currentYear + 1] || holidaysByYear[2024];
+    nextYearHolidays.forEach(holiday => {
+      const holidayDate = new Date(currentYear + 1, holiday.month, holiday.date);
+      if (holidayDate >= startDate && holidayDate <= endDate) {
+        holidays.push({
+          date: holidayDate,
+          name: holiday.name,
+          type: holiday.type,
+          description: `${holiday.name} - ${holiday.type === 'national' ? 'National' : holiday.type === 'religious' ? 'Religious' : 'Public'} Holiday`
+        });
+      }
+    });
+  }
   
   return holidays;
 }

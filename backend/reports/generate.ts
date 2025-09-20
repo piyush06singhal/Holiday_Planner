@@ -520,5 +520,5 @@ function generateEnhancedCSVContent(reportContent: any): string {
     ['Support Contact', 'Available through platform chat assistant']
   ];
   
-  return csvContent.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+  return csvContent.map(row => row.map((cell: string | number) => `"${cell}"`).join(',')).join('\n');
 }

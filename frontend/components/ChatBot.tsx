@@ -16,12 +16,30 @@ interface Message {
   recommendedDates?: string[];
 }
 
-const ChatBot = () => {
+interface ChatBotProps {
+  attendanceData?: {
+    totalDays: number;
+    requiredDays: number;
+    safeLeaveDays: number;
+    attendanceRule: number;
+    optimalLeaveDates?: Array<{
+      startDate: string;
+      endDate: string;
+      duration: number;
+      reason: string;
+      aiScore: number;
+      description: string;
+    }>;
+  };
+  userType?: 'student' | 'employee';
+}
+
+const ChatBot: React.FC<ChatBotProps> = ({ attendanceData, userType: propUserType }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [userType, setUserType] = useState<'student' | 'employee'>('student');
+  const [userType, setUserType] = useState<'student' | 'employee'>(propUserType || 'student');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -30,13 +48,21 @@ const ChatBot = () => {
     const timer = setTimeout(() => {
       if (!isOpen) {
         setIsOpen(true);
-        addBotMessage(
-          "🤖 Hi! I'm your AI Holiday Planning Assistant with advanced calendar integration! I can help you find optimal leave dates, analyze attendance risks, and create calendar-ready schedules. What would you like to plan today?",
-          ["When can I take my next vacation?", "Show me optimal holiday dates", "How does AI calendar integration work?"],
-          ["This Friday: Perfect for long weekend", "Next month: Ideal travel period", "Quarter-end: Strategic break time"]
-        );
+        const welcomeMessage = attendanceData ? 
+          `🤖 Hi! I see you've calculated your attendance data. You have ${attendanceData.safeLeaveDays} safe leave days available! I can help you optimize your holiday planning with AI-powered recommendations. What would you like to know?` :
+          "🤖 Hi! I'm your AI Holiday Planning Assistant with advanced calendar integration! I can help you find optimal leave dates, analyze attendance risks, and create calendar-ready schedules. What would you like to plan today?";
+          
+        const suggestions = attendanceData ? 
+          ["Analyze my calculated data", "Show optimal leave dates", "Plan my next vacation"] :
+          ["When can I take my next vacation?", "Show me optimal holiday dates", "How does AI calendar integration work?"];
+          
+        const dates = attendanceData?.optimalLeaveDates ? 
+          attendanceData.optimalLeaveDates.slice(0, 3).map(date => `${date.reason}: ${new Date(date.startDate).toLocaleDateString()}`) :
+          ["This Friday: Perfect for long weekend", "Next month: Ideal travel period", "Quarter-end: Strategic break time"];
+          
+        addBotMessage(welcomeMessage, suggestions, dates);
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 3 * 1000); // 3 seconds for faster interaction
 
     return () => clearTimeout(timer);
   }, [isOpen]);
@@ -80,23 +106,29 @@ const ChatBot = () => {
       const request: ChatRequest = {
         message: messageToSend,
         userType,
-        // In a real app, you'd get this from the calculator state or local storage
-        attendanceData: undefined
+        attendanceData: attendanceData ? {
+          totalDays: attendanceData.totalDays,
+          requiredDays: attendanceData.requiredDays,
+          safeLeaveDays: attendanceData.safeLeaveDays,
+          attendanceRule: attendanceData.attendanceRule,
+          optimalLeaveDates: attendanceData.optimalLeaveDates
+        } : undefined
       };
 
       const response = await backend.ai.chat(request);
       addBotMessage(response.response, response.suggestions, response.recommendedDates);
     } catch (error) {
       console.error('Chat error:', error);
-      addBotMessage(
-        "🔄 Sorry, I'm having trouble connecting right now. Please try again in a moment. I'm here to help with AI-powered attendance planning, optimal holiday dates, calendar integration, and strategic leave recommendations!",
-        ["Try again", "Go to Calculator", "How does AI planning work?"]
-      );
-      toast({
-        title: "Chat Error",
-        description: "Failed to get AI response. Please try again.",
-        variant: "destructive",
-      });
+      // Provide better fallback responses based on context
+      const fallbackMessage = attendanceData ? 
+        `🤖 I can still help you! Based on your data, you have ${attendanceData.safeLeaveDays} safe leave days. ${attendanceData.safeLeaveDays > 0 ? 'You\'re in a good position to plan some holidays!' : 'You need to be very careful with attendance.'}` :
+        "🔄 I'm working in offline mode but can still help with general holiday planning advice! What would you like to know?";
+        
+      const fallbackSuggestions = attendanceData && attendanceData.safeLeaveDays > 0 ? 
+        ["What are my best vacation dates?", "How risky is my current status?", "Show planning strategies"] :
+        ["Go to Calculator first", "How does AI planning work?", "General holiday tips"];
+        
+      addBotMessage(fallbackMessage, fallbackSuggestions);
     } finally {
       setIsLoading(false);
     }
@@ -141,14 +173,21 @@ const ChatBot = () => {
             <span className="font-semibold text-base">AI Holiday Assistant</span>
           </div>
           <div className="flex items-center space-x-2">
-            <select
-              value={userType}
-              onChange={(e) => setUserType(e.target.value as 'student' | 'employee')}
-              className="text-xs bg-white/20 border border-white/30 rounded px-2 py-1 text-white backdrop-blur-sm hover:bg-white/30 transition-all duration-300"
-            >
-              <option value="student">Student</option>
-              <option value="employee">Employee</option>
-            </select>
+            {!propUserType && (
+              <select
+                value={userType}
+                onChange={(e) => setUserType(e.target.value as 'student' | 'employee')}
+                className="text-xs bg-white/20 border border-white/30 rounded px-2 py-1 text-white backdrop-blur-sm hover:bg-white/30 transition-all duration-300"
+              >
+                <option value="student">Student</option>
+                <option value="employee">Employee</option>
+              </select>
+            )}
+            {propUserType && (
+              <div className="text-xs bg-white/20 border border-white/30 rounded px-2 py-1 text-white backdrop-blur-sm">
+                {propUserType.charAt(0).toUpperCase() + propUserType.slice(1)}
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -166,7 +205,11 @@ const ChatBot = () => {
             <div className="text-center text-gray-500 text-sm animate-fade-in">
               <Bot className="h-8 w-8 mx-auto mb-2 text-violet-600 animate-pulse" />
               <p className="font-medium text-sm">Hi! I'm your AI Holiday Assistant.</p>
-              <p className="text-xs">Ask me about optimal dates, calendar integration, and smart planning!</p>
+              {attendanceData ? (
+                <p className="text-xs">I can see your attendance data. Let's optimize your holidays!</p>
+              ) : (
+                <p className="text-xs">Calculate your attendance first for personalized recommendations!</p>
+              )}
             </div>
           )}
           
@@ -259,7 +302,7 @@ const ChatBot = () => {
         </div>
       </Card>
 
-      <style jsx>{`
+      <style>{`
         @keyframes slide-up {
           from {
             opacity: 0;

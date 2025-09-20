@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Calendar, Download, AlertTriangle, CheckCircle, TrendingUp, GraduationCap, Briefcase, CalendarDays, Sparkles, MapPin, Clock, Star, Target, Brain } from 'lucide-react';
+import { Calendar, Download, AlertTriangle, CheckCircle, TrendingUp, GraduationCap, Briefcase, CalendarDays, Sparkles, MapPin, Clock, Star, Target, Brain, Eye } from 'lucide-react';
 import backend from '~backend/client';
 import type { CalculateAttendanceRequest, AttendanceCalculation } from '~backend/attendance/calculate';
 import type { PublicHolidaysRequest, PublicHolidaysResponse } from '~backend/calendar/integration';
+import HolidayCalendar from '../components/HolidayCalendar';
+import { useAttendance } from '../contexts/AttendanceContext';
 
 const CalculatorPage = () => {
   const [activeTab, setActiveTab] = useState<'student' | 'employee'>('student');
@@ -27,7 +29,9 @@ const CalculatorPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingHolidays, setIsLoadingHolidays] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const { toast } = useToast();
+  const { setAttendanceData } = useAttendance();
 
   const handleTabChange = (tab: 'student' | 'employee') => {
     setActiveTab(tab);
@@ -112,6 +116,16 @@ const CalculatorPage = () => {
 
       const calculation = await backend.attendance.calculate(request);
       setResult(calculation);
+      
+      // Update attendance context for chatbot
+      setAttendanceData({
+        totalDays: calculation.totalDays,
+        requiredDays: calculation.requiredDays,
+        safeLeaveDays: calculation.safeLeaveDays,
+        attendanceRule: parseInt(formData.attendanceRule),
+        userType: activeTab,
+        optimalLeaveDates: calculation.optimalLeaveDates
+      });
       
       // Auto-fetch holidays after calculation
       if (!publicHolidays) {
@@ -244,7 +258,7 @@ const CalculatorPage = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12">
+        <div className={`grid ${showCalendar ? 'lg:grid-cols-1' : 'lg:grid-cols-2'} gap-12`}>
           {/* Input Form */}
           <Card className="p-8 bg-white/90 backdrop-blur-xl border-2 border-violet-300 shadow-2xl hover:shadow-violet-500/30 transition-all duration-500 hover:scale-105 transform-gpu animate-slide-left">
             <div className="space-y-6">
@@ -396,7 +410,19 @@ const CalculatorPage = () => {
                     <MapPin className="h-5 w-5" />
                     <span>Load Smart Public Holidays</span>
                   </div>
-                )}
+                )}  
+              </Button>
+
+              {/* Calendar View Button */}
+              <Button
+                onClick={() => setShowCalendar(!showCalendar)}
+                variant="outline"
+                className="w-full border-2 border-blue-400 text-blue-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-500 py-3 text-lg font-semibold shadow-lg hover:shadow-blue-500/40 transition-all duration-500 hover:scale-105 transform-gpu rounded-xl"
+              >
+                <div className="flex items-center space-x-3">
+                  <Eye className="h-5 w-5" />
+                  <span>{showCalendar ? 'Hide Calendar View' : 'Show Calendar View'}</span>
+                </div>
               </Button>
 
               <Button
@@ -679,10 +705,24 @@ const CalculatorPage = () => {
               </div>
             )}
           </Card>
+          
+          {/* Holiday Calendar */}
+          {showCalendar && (
+            <div className="lg:col-span-2 animate-slide-up">
+              <HolidayCalendar 
+                startDate={formData.startDate ? new Date(formData.startDate) : undefined}
+                endDate={formData.endDate ? new Date(formData.endDate) : undefined}
+                attendanceData={result ? {
+                  safeLeaveDays: result.safeLeaveDays,
+                  optimalLeaveDates: result.optimalLeaveDates
+                } : undefined}
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes blob {
           0% {
             transform: translate(0px, 0px) scale(1);
