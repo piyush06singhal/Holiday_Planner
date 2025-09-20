@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Calendar, Download, AlertTriangle, CheckCircle, TrendingUp, GraduationCap, Briefcase, CalendarDays, Sparkles, MapPin, Clock } from 'lucide-react';
+import { Calendar, Download, AlertTriangle, CheckCircle, TrendingUp, GraduationCap, Briefcase, CalendarDays, Sparkles, MapPin, Clock, Star, Target, Brain } from 'lucide-react';
 import backend from '~backend/client';
 import type { CalculateAttendanceRequest, AttendanceCalculation } from '~backend/attendance/calculate';
 import type { PublicHolidaysRequest, PublicHolidaysResponse } from '~backend/calendar/integration';
@@ -13,7 +13,6 @@ import type { PublicHolidaysRequest, PublicHolidaysResponse } from '~backend/cal
 const CalculatorPage = () => {
   const [activeTab, setActiveTab] = useState<'student' | 'employee'>('student');
   const [formData, setFormData] = useState({
-    email: '',
     startDate: '',
     endDate: '',
     attendanceRule: activeTab === 'student' ? '75' : '80',
@@ -72,8 +71,8 @@ const CalculatorPage = () => {
       setPublicHolidays(holidays);
       
       toast({
-        title: "Holidays Loaded",
-        description: `Found ${holidays.holidays.length} public holidays and ${holidays.suggestedLongWeekends.length} long weekend opportunities!`,
+        title: "🎉 Holidays Loaded Successfully!",
+        description: `Found ${holidays.holidays.length} public holidays and ${holidays.suggestedLongWeekends.length} smart long weekend opportunities!`,
       });
     } catch (error) {
       console.error('Error fetching holidays:', error);
@@ -88,10 +87,10 @@ const CalculatorPage = () => {
   };
 
   const handleCalculate = async () => {
-    if (!formData.email || !formData.startDate || !formData.endDate) {
+    if (!formData.startDate || !formData.endDate) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in the start and end dates.",
         variant: "destructive",
       });
       return;
@@ -100,7 +99,6 @@ const CalculatorPage = () => {
     setIsLoading(true);
     try {
       const request: CalculateAttendanceRequest = {
-        email: formData.email,
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
         attendanceRule: parseInt(formData.attendanceRule),
@@ -121,8 +119,8 @@ const CalculatorPage = () => {
       }
       
       toast({
-        title: "Calculation Complete",
-        description: `Your ${activeTab} attendance analysis is ready!`,
+        title: "🎯 AI Analysis Complete!",
+        description: `Your ${activeTab} attendance analysis with AI calendar recommendations is ready!`,
       });
     } catch (error) {
       console.error('Calculation error:', error);
@@ -152,7 +150,6 @@ const CalculatorPage = () => {
           suggestedHolidayDates: result.suggestedHolidayDates || []
         },
         userInfo: {
-          email: formData.email,
           userType: activeTab,
           startDate: new Date(formData.startDate),
           endDate: new Date(formData.endDate),
@@ -166,7 +163,7 @@ const CalculatorPage = () => {
       
       // Create a blob from the response data
       const blob = new Blob([response.fileContent], { 
-        type: format === 'pdf' ? 'application/pdf' : 'text/csv' 
+        type: format === 'pdf' ? 'text/html' : 'text/csv' 
       });
       
       // Create a download link
@@ -180,8 +177,8 @@ const CalculatorPage = () => {
       window.URL.revokeObjectURL(url);
       
       toast({
-        title: "Export Ready",
-        description: `Your ${format.toUpperCase()} report has been downloaded!`,
+        title: "📄 Export Ready!",
+        description: `Your ${format.toUpperCase()} report with AI recommendations has been downloaded!`,
       });
     } catch (error) {
       console.error('Export error:', error);
@@ -207,15 +204,15 @@ const CalculatorPage = () => {
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16 animate-fade-in">
           <div className="flex items-center justify-center mb-6">
-            <Sparkles className="h-8 w-8 text-violet-600 mr-2 animate-pulse" />
-            <span className="text-violet-600 font-medium text-lg">AI-Powered Analysis</span>
+            <Brain className="h-8 w-8 text-violet-600 mr-2 animate-pulse" />
+            <span className="text-violet-600 font-medium text-lg">AI-Powered Calendar Analysis</span>
             <Sparkles className="h-8 w-8 text-emerald-600 ml-2 animate-pulse" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 via-fuchsia-600 to-rose-600 bg-clip-text text-transparent mb-8 animate-bounce-slow">
-            AI Attendance Calculator
+            Smart Attendance Calculator
           </h1>
           <p className="text-xl text-gray-700 max-w-4xl mx-auto">
-            Plan your semester or work year smartly with AI-powered attendance insights and holiday recommendations.
+            Get AI-powered attendance insights with optimal holiday dates and calendar-ready recommendations.
           </p>
         </div>
 
@@ -266,20 +263,6 @@ const CalculatorPage = () => {
 
               {/* Form Fields */}
               <div className="space-y-4">
-                <div className="group">
-                  <Label htmlFor="email" className="text-gray-800 font-medium">
-                    {activeTab === 'student' ? 'Email Address' : 'Work Email Address'}
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder={activeTab === 'student' ? 'your.email@university.edu' : 'your.email@company.com'}
-                    className="mt-2 bg-white border-2 border-gray-400 text-gray-900 placeholder:text-gray-600 focus:border-violet-500 hover:border-violet-400 transition-all duration-300 py-2"
-                  />
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="group">
                     <Label htmlFor="startDate" className="text-gray-800 font-medium">
@@ -355,7 +338,7 @@ const CalculatorPage = () => {
                 {activeTab === 'student' ? (
                   <>
                     <div className="group">
-                      <Label htmlFor="institutionType" className="text-gray-800 font-medium">Institution Type</Label>
+                      <Label htmlFor="institutionType" className="text-gray-800 font-medium">Institution Type (Optional)</Label>
                       <Select value={formData.institutionType} onValueChange={(value) => handleInputChange('institutionType', value)}>
                         <SelectTrigger className="mt-2 bg-white border-2 border-gray-400 text-gray-900 focus:border-violet-500 hover:border-violet-400 transition-all duration-300 py-2">
                           <SelectValue placeholder="Select institution type" />
@@ -406,12 +389,12 @@ const CalculatorPage = () => {
                 {isLoadingHolidays ? (
                   <div className="flex items-center space-x-3">
                     <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Loading Holidays...</span>
+                    <span>Loading Smart Holidays...</span>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-3">
                     <MapPin className="h-5 w-5" />
-                    <span>Load Public Holidays</span>
+                    <span>Load Smart Public Holidays</span>
                   </div>
                 )}
               </Button>
@@ -428,10 +411,13 @@ const CalculatorPage = () => {
                 {isLoading ? (
                   <div className="flex items-center space-x-3">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Calculating...</span>
+                    <span>AI Analysis in Progress...</span>
                   </div>
                 ) : (
-                  'Calculate with AI'
+                  <div className="flex items-center space-x-3">
+                    <Brain className="h-5 w-5" />
+                    <span>Calculate with AI</span>
+                  </div>
                 )}
               </Button>
             </div>
@@ -492,17 +478,72 @@ const CalculatorPage = () => {
                   </div>
                 </div>
 
-                {/* Suggested Leave Dates */}
+                {/* AI-Optimized Leave Dates */}
+                {result.optimalLeaveDates && result.optimalLeaveDates.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Star className={`h-4 w-4 ${
+                        activeTab === 'student' ? 'text-violet-600' : 'text-emerald-600'
+                      } mr-2 animate-pulse`} />
+                      🎯 AI-Optimized Leave Dates
+                    </h4>
+                    <div className="space-y-3 max-h-56 overflow-y-auto">
+                      {result.optimalLeaveDates.slice(0, 5).map((optimal, index) => (
+                        <div key={index} className={`p-4 rounded-lg border-2 hover:scale-105 transition-transform duration-300 shadow-lg ${
+                          optimal.aiScore >= 90 
+                            ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-400'
+                            : optimal.aiScore >= 80
+                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 border-blue-400'
+                            : 'bg-gradient-to-r from-yellow-100 to-orange-100 border-yellow-400'
+                        }`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <h5 className="font-semibold text-gray-800">{optimal.reason}</h5>
+                                <div className={`px-2 py-1 rounded text-xs font-bold ${
+                                  optimal.aiScore >= 90 ? 'bg-green-200 text-green-800' :
+                                  optimal.aiScore >= 80 ? 'bg-blue-200 text-blue-800' :
+                                  'bg-yellow-200 text-yellow-800'
+                                }`}>
+                                  AI Score: {optimal.aiScore}/100
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{optimal.description}</p>
+                              <p className="text-xs text-gray-500">
+                                📅 {new Date(optimal.startDate).toLocaleDateString()} - {new Date(optimal.endDate).toLocaleDateString()} • {optimal.duration} day(s)
+                              </p>
+                              <div className="mt-2">
+                                <div className="flex flex-wrap gap-1">
+                                  {optimal.benefits.slice(0, 2).map((benefit, benefitIndex) => (
+                                    <span key={benefitIndex} className="text-xs bg-white/70 text-gray-700 px-2 py-1 rounded-full">
+                                      {benefit}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-1 ml-3">
+                              <Target className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm font-medium text-gray-600">{optimal.duration}d</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Traditional Suggested Leave Dates */}
                 {result.suggestedLeaveDates && result.suggestedLeaveDates.length > 0 && (
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                       <CalendarDays className={`h-4 w-4 ${
                         activeTab === 'student' ? 'text-violet-600' : 'text-emerald-600'
                       } mr-2 animate-pulse`} />
-                      AI-Suggested Leave Dates
+                      📋 Additional Smart Suggestions
                     </h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {result.suggestedLeaveDates.map((suggestion, index) => (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {result.suggestedLeaveDates.slice(0, 3).map((suggestion, index) => (
                         <div key={index} className={`p-3 ${
                           suggestion.type === 'festival' 
                             ? 'bg-gradient-to-r from-orange-100 to-yellow-100 border-orange-400'
@@ -534,10 +575,10 @@ const CalculatorPage = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                       <MapPin className="h-4 w-4 text-blue-600 mr-2 animate-pulse" />
-                      Long Weekend Opportunities
+                      🌟 Smart Long Weekend Opportunities
                     </h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {publicHolidays.suggestedLongWeekends.slice(0, 5).map((weekend, index) => (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {publicHolidays.suggestedLongWeekends.slice(0, 3).map((weekend, index) => (
                         <div key={index} className="p-3 bg-gradient-to-r from-blue-100 to-cyan-100 border-2 border-blue-400 rounded-lg hover:scale-105 transition-transform duration-300 shadow-lg">
                           <div className="flex items-center justify-between">
                             <div>
@@ -563,7 +604,7 @@ const CalculatorPage = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                       <CheckCircle className="h-4 w-4 text-green-600 mr-2 animate-pulse" />
-                      AI Recommendations
+                      🤖 AI Recommendations
                     </h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {result.recommendations.map((rec, index) => (
@@ -580,7 +621,7 @@ const CalculatorPage = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                       <AlertTriangle className="h-4 w-4 text-orange-600 mr-2 animate-pulse" />
-                      Important Warnings
+                      ⚠️ Important Warnings
                     </h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {result.warnings.map((warning, index) => (
@@ -598,7 +639,7 @@ const CalculatorPage = () => {
                     <Download className={`h-4 w-4 ${
                       activeTab === 'student' ? 'text-violet-600' : 'text-emerald-600'
                     } mr-2 animate-pulse`} />
-                    Export Report
+                    📄 Export AI Report
                   </h4>
                   <div className="flex space-x-3">
                     <Button
@@ -631,9 +672,9 @@ const CalculatorPage = () => {
             ) : (
               <div className="text-center py-12 animate-float">
                 <Calendar className="h-16 w-16 text-gray-500 mx-auto mb-4 animate-pulse" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-3">Ready for Analysis</h3>
+                <h3 className="text-xl font-semibold text-gray-700 mb-3">Ready for AI Analysis</h3>
                 <p className="text-gray-600">
-                  Fill in your {activeTab === 'student' ? 'semester' : 'annual'} details and click "Calculate with AI" to get personalized attendance insights.
+                  Fill in your {activeTab === 'student' ? 'semester' : 'annual'} details and click "Calculate with AI" to get personalized attendance insights and optimal holiday dates.
                 </p>
               </div>
             )}
