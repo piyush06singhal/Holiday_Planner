@@ -43,28 +43,23 @@ const ChatBot: React.FC<ChatBotProps> = ({ attendanceData, userType: propUserTyp
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Auto-popup every 5 minutes with enhanced AI messaging
+  // Only show welcome message when user opens the chatbot manually
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isOpen) {
-        setIsOpen(true);
-        const welcomeMessage = attendanceData ? 
-          `🤖 Hi! I see you've calculated your attendance data. You have ${attendanceData.safeLeaveDays} safe leave days available! I can help you optimize your holiday planning with AI-powered recommendations. What would you like to know?` :
-          "🤖 Hi! I'm your AI Holiday Planning Assistant with advanced calendar integration! I can help you find optimal leave dates, analyze attendance risks, and create calendar-ready schedules. What would you like to plan today?";
-          
-        const suggestions = attendanceData ? 
-          ["Analyze my calculated data", "Show optimal leave dates", "Plan my next vacation"] :
-          ["When can I take my next vacation?", "Show me optimal holiday dates", "How does AI calendar integration work?"];
-          
-        const dates = attendanceData?.optimalLeaveDates ? 
-          attendanceData.optimalLeaveDates.slice(0, 3).map(date => `${date.reason}: ${new Date(date.startDate).toLocaleDateString()}`) :
-          ["This Friday: Perfect for long weekend", "Next month: Ideal travel period", "Quarter-end: Strategic break time"];
-          
-        addBotMessage(welcomeMessage, suggestions, dates);
-      }
-    }, 3 * 1000); // 3 seconds for faster interaction
-
-    return () => clearTimeout(timer);
+    if (isOpen && messages.length === 0) {
+      const welcomeMessage = attendanceData ? 
+        `🤖 Hi! I see you've calculated your attendance data. You have ${attendanceData.safeLeaveDays} safe leave days available! I can help you optimize your holiday planning with AI-powered recommendations. What would you like to know?` :
+        "🤖 Hi! I'm your AI Holiday Planning Assistant with advanced calendar integration! I can help you find optimal leave dates, analyze attendance risks, and create calendar-ready schedules. What would you like to plan today?";
+        
+      const suggestions = attendanceData ? 
+        ["Analyze my calculated data", "Show optimal leave dates", "Plan my next vacation"] :
+        ["When can I take my next vacation?", "Show me optimal holiday dates", "How does AI calendar integration work?"];
+        
+      const dates = attendanceData?.optimalLeaveDates ? 
+        attendanceData.optimalLeaveDates.slice(0, 3).map(date => `${date.reason}: ${new Date(date.startDate).toLocaleDateString()}`) :
+        ["This Friday: Perfect for long weekend", "Next month: Ideal travel period", "Quarter-end: Strategic break time"];
+        
+      addBotMessage(welcomeMessage, suggestions, dates);
+    }
   }, [isOpen]);
 
   // Scroll to bottom when new messages are added

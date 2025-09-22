@@ -41,11 +41,12 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({
   const [publicHolidays, setPublicHolidays] = useState<PublicHolidaysResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
   const { toast } = useToast();
 
   // Fetch holidays when component mounts or date range changes
   useEffect(() => {
-    if (startDate && endDate) {
+    if (startDate && endDate && !publicHolidays) {
       fetchHolidays();
     }
   }, [startDate, endDate]);
@@ -64,10 +65,14 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({
       const holidays = await backend.calendar.getPublicHolidays(request);
       setPublicHolidays(holidays);
       
-      toast({
-        title: "🎉 Smart Calendar Loaded!",
-        description: `Found ${holidays.holidays.length} holidays and ${holidays.suggestedLongWeekends.length} long weekend opportunities!`,
-      });
+      // Only show success toast if not shown before
+      if (!hasShownSuccessToast) {
+        toast({
+          title: "🎉 Smart Calendar Loaded!",
+          description: `Found ${holidays.holidays.length} holidays and ${holidays.suggestedLongWeekends.length} long weekend opportunities!`,
+        });
+        setHasShownSuccessToast(true);
+      }
     } catch (error) {
       console.error('Error fetching holidays:', error);
       toast({
@@ -331,157 +336,285 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-1">
-          {/* Day headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-sm font-semibold text-gray-600 p-3">
-              {day}
-            </div>
-          ))}
+        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {/* Day headers */}
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+              <div key={day} className={`text-center text-sm font-bold p-3 rounded-lg ${
+                index === 0 || index === 6 
+                  ? 'bg-gradient-to-br from-orange-100 to-red-100 text-orange-700' 
+                  : 'bg-gradient-to-br from-violet-100 to-purple-100 text-violet-700'
+              }`}>
+                {day}
+              </div>
+            ))}
+          </div>
           
           {/* Calendar days */}
-          {days.map((day, index) => {
-            const holiday = isHoliday(day);
-            const optimalLeave = isOptimalLeaveDate(day);
-            const isWeekendDay = isWeekend(day);
-            const isTodayDay = isToday(day);
-            const isCurrentMonthDay = isCurrentMonth(day);
-            
-            return (
-              <div
-                key={index}
-                onClick={() => setSelectedDate(day)}
-                className={`
-                  relative p-2 h-16 cursor-pointer transition-all duration-300 rounded-lg
-                  ${!isCurrentMonthDay ? 'opacity-30' : ''}
-                  ${isTodayDay ? 'ring-2 ring-violet-500' : ''}
-                  ${isWeekendDay ? 'bg-gray-100' : 'bg-white'}
-                  ${holiday ? 'bg-gradient-to-br from-red-100 to-pink-100 border-2 border-red-300' : ''}
-                  ${optimalLeave ? 'bg-gradient-to-br from-emerald-100 to-green-100 border-2 border-emerald-300' : ''}
-                  hover:scale-105 hover:shadow-lg hover:z-10
-                `}
-              >
-                <div className="text-sm font-medium text-gray-800">
-                  {day.getDate()}
+          <div className="grid grid-cols-7 gap-2">
+            {days.map((day, index) => {
+              const holiday = isHoliday(day);
+              const optimalLeave = isOptimalLeaveDate(day);
+              const isWeekendDay = isWeekend(day);
+              const isTodayDay = isToday(day);
+              const isCurrentMonthDay = isCurrentMonth(day);
+              
+              return (
+                <div
+                  key={index}
+                  onClick={() => setSelectedDate(day)}
+                  className={`
+                    relative p-3 h-20 cursor-pointer transition-all duration-300 rounded-xl border-2
+                    ${!isCurrentMonthDay ? 'opacity-40 scale-95' : 'hover:scale-105'}
+                    ${isTodayDay ? 'ring-4 ring-violet-400 ring-opacity-50 shadow-lg shadow-violet-500/30' : ''}
+                    ${isWeekendDay && !holiday && !optimalLeave ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200' : ''}
+                    ${!isWeekendDay && !holiday && !optimalLeave ? 'bg-white border-gray-200 hover:border-violet-300 hover:shadow-md' : ''}
+                    ${holiday ? 'bg-gradient-to-br from-red-50 via-red-100 to-pink-100 border-red-300 shadow-md hover:shadow-red-200' : ''}
+                    ${optimalLeave ? 'bg-gradient-to-br from-emerald-50 via-emerald-100 to-green-100 border-emerald-300 shadow-md hover:shadow-emerald-200' : ''}
+                    hover:z-10 transform-gpu
+                  `}
+                >
+                  <div className={`text-sm font-bold mb-1 ${
+                    isTodayDay ? 'text-violet-700' :
+                    holiday ? 'text-red-700' :
+                    optimalLeave ? 'text-emerald-700' :
+                    isWeekendDay ? 'text-gray-600' : 'text-gray-800'
+                  }`}>
+                    {day.getDate()}
+                  </div>
+                  
+                  {/* Multiple indicators container */}
+                  <div className="absolute top-2 right-2 flex flex-col space-y-1">
+                    {/* Holiday indicator */}
+                    {holiday && (
+                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-sm"></div>
+                    )}
+                    
+                    {/* Today indicator */}
+                    {isTodayDay && (
+                      <div className="w-3 h-3 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full animate-pulse shadow-md"></div>
+                    )}
+                  </div>
+                  
+                  {/* Bottom indicators */}
+                  <div className="absolute bottom-2 left-2 flex space-x-1">
+                    {/* Optimal leave indicator */}
+                    {optimalLeave && (
+                      <Star className="h-4 w-4 text-emerald-600 animate-bounce" />
+                    )}
+                  </div>
+                  
+                  {/* Holiday name (better positioned) */}
+                  {holiday && (
+                    <div className="absolute bottom-1 left-1 right-1 text-xs text-red-700 font-semibold text-center truncate">
+                      {holiday.name.length > 8 ? holiday.name.substring(0, 6) + '...' : holiday.name}
+                    </div>
+                  )}
+                  
+                  {/* Optimal leave badge */}
+                  {optimalLeave && !holiday && (
+                    <div className="absolute bottom-1 left-1 right-1 text-xs text-emerald-700 font-semibold text-center truncate">
+                      AI: {optimalLeave.aiScore}/100
+                    </div>
+                  )}
                 </div>
-                
-                {/* Holiday indicator */}
-                {holiday && (
-                  <div className="absolute top-1 right-1">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  </div>
-                )}
-                
-                {/* Optimal leave indicator */}
-                {optimalLeave && (
-                  <div className="absolute bottom-1 left-1">
-                    <Star className="h-3 w-3 text-emerald-600" />
-                  </div>
-                )}
-                
-                {/* Today indicator */}
-                {isTodayDay && (
-                  <div className="absolute bottom-1 right-1">
-                    <div className="w-2 h-2 bg-violet-500 rounded-full"></div>
-                  </div>
-                )}
-                
-                {/* Holiday name (abbreviated) */}
-                {holiday && (
-                  <div className="absolute bottom-0 left-0 right-0 text-xs text-red-700 font-medium truncate px-1">
-                    {holiday.name.substring(0, 8)}
-                  </div>
-                )}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Enhanced Legend */}
+        <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-200">
+          <h4 className="text-sm font-bold text-gray-700 mb-3 text-center">Calendar Legend</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="flex items-center space-x-3 p-2 rounded-lg bg-white shadow-sm border border-red-200">
+              <div className="w-5 h-5 bg-gradient-to-br from-red-100 to-pink-100 border-2 border-red-300 rounded-lg flex items-center justify-center">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Legend */}
-        <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gradient-to-br from-red-100 to-pink-100 border border-red-300 rounded"></div>
-            <span>Public Holiday</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gradient-to-br from-emerald-100 to-green-100 border border-emerald-300 rounded"></div>
-            <span>AI-Optimal Leave</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gray-100 rounded"></div>
-            <span>Weekend</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 border-2 border-violet-500 rounded"></div>
-            <span>Today</span>
+              <span className="font-medium text-red-700">Public Holiday</span>
+            </div>
+            <div className="flex items-center space-x-3 p-2 rounded-lg bg-white shadow-sm border border-emerald-200">
+              <div className="w-5 h-5 bg-gradient-to-br from-emerald-100 to-green-100 border-2 border-emerald-300 rounded-lg flex items-center justify-center">
+                <Star className="h-3 w-3 text-emerald-600" />
+              </div>
+              <span className="font-medium text-emerald-700">AI-Optimal Leave</span>
+            </div>
+            <div className="flex items-center space-x-3 p-2 rounded-lg bg-white shadow-sm border border-gray-200">
+              <div className="w-5 h-5 bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-300 rounded-lg"></div>
+              <span className="font-medium text-gray-600">Weekend</span>
+            </div>
+            <div className="flex items-center space-x-3 p-2 rounded-lg bg-white shadow-sm border border-violet-200">
+              <div className="w-5 h-5 border-2 border-violet-500 rounded-lg bg-gradient-to-r from-violet-100 to-purple-100 flex items-center justify-center">
+                <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse"></div>
+              </div>
+              <span className="font-medium text-violet-700">Today</span>
+            </div>
           </div>
         </div>
 
-        {/* Statistics */}
+        {/* Enhanced Statistics */}
         {publicHolidays && (
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg border border-red-200">
-              <div className="text-2xl font-bold text-red-600">{publicHolidays.holidays.length}</div>
-              <div className="text-sm text-red-700">Public Holidays</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-              <div className="text-2xl font-bold text-blue-600">{publicHolidays.suggestedLongWeekends.length}</div>
-              <div className="text-sm text-blue-700">Long Weekends</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
-              <div className="text-2xl font-bold text-emerald-600">{attendanceData?.safeLeaveDays || 0}</div>
-              <div className="text-sm text-emerald-700">Safe Leave Days</div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="text-center p-6 bg-gradient-to-br from-red-50 via-red-100 to-pink-50 border-2 border-red-200 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="text-3xl font-bold text-red-600 mb-2">{publicHolidays.holidays.length}</div>
+              <div className="text-sm font-semibold text-red-700 mb-1">Public Holidays</div>
+              <div className="text-xs text-red-600 opacity-75">Upcoming celebrations</div>
+            </Card>
+            <Card className="text-center p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-50 border-2 border-blue-200 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="text-3xl font-bold text-blue-600 mb-2">{publicHolidays.suggestedLongWeekends.length}</div>
+              <div className="text-sm font-semibold text-blue-700 mb-1">Long Weekends</div>
+              <div className="text-xs text-blue-600 opacity-75">Smart opportunities</div>
+            </Card>
+            <Card className="text-center p-6 bg-gradient-to-br from-emerald-50 via-emerald-100 to-green-50 border-2 border-emerald-200 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="text-3xl font-bold text-emerald-600 mb-2">{attendanceData?.safeLeaveDays || 0}</div>
+              <div className="text-sm font-semibold text-emerald-700 mb-1">Safe Leave Days</div>
+              <div className="text-xs text-emerald-600 opacity-75">Available for planning</div>
+            </Card>
           </div>
         )}
 
-        {/* Selected date info */}
+        {/* Enhanced Selected date info */}
         {selectedDate && (
-          <Card className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200">
-            <h4 className="font-semibold text-violet-900 mb-2">
-              {selectedDate.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </h4>
-            
-            {isHoliday(selectedDate) && (
-              <div className="flex items-center space-x-2 text-red-700 mb-2">
-                <MapPin className="h-4 w-4" />
-                <span className="font-medium">{isHoliday(selectedDate)?.name}</span>
+          <Card className="p-6 bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 border-2 border-violet-300 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center">
+                <Calendar className="h-6 w-6 text-white" />
               </div>
-            )}
-            
-            {isOptimalLeaveDate(selectedDate) && (
-              <div className="flex items-center space-x-2 text-emerald-700 mb-2">
-                <Star className="h-4 w-4" />
-                <span className="font-medium">
-                  {isOptimalLeaveDate(selectedDate)?.reason} 
-                  (AI Score: {isOptimalLeaveDate(selectedDate)?.aiScore}/100)
-                </span>
+              <div>
+                <h4 className="text-lg font-bold text-violet-900">
+                  {selectedDate.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </h4>
+                <p className="text-sm text-violet-600">{selectedDate.getFullYear()}</p>
               </div>
-            )}
+            </div>
             
-            {isWeekend(selectedDate) && (
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Clock className="h-4 w-4" />
-                <span>Weekend</span>
-              </div>
-            )}
+            <div className="space-y-3">
+              {isHoliday(selectedDate) && (
+                <div className="flex items-center space-x-3 p-3 bg-red-100 rounded-lg border border-red-200">
+                  <MapPin className="h-5 w-5 text-red-600" />
+                  <div>
+                    <span className="font-semibold text-red-700">{isHoliday(selectedDate)?.name}</span>
+                    <p className="text-xs text-red-600">{isHoliday(selectedDate)?.type} holiday</p>
+                  </div>
+                </div>
+              )}
+              
+              {isOptimalLeaveDate(selectedDate) && (
+                <div className="flex items-center space-x-3 p-3 bg-emerald-100 rounded-lg border border-emerald-200">
+                  <Star className="h-5 w-5 text-emerald-600" />
+                  <div>
+                    <span className="font-semibold text-emerald-700">
+                      {isOptimalLeaveDate(selectedDate)?.reason}
+                    </span>
+                    <p className="text-xs text-emerald-600">
+                      AI Optimization Score: {isOptimalLeaveDate(selectedDate)?.aiScore}/100
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {isWeekend(selectedDate) && !isHoliday(selectedDate) && (
+                <div className="flex items-center space-x-3 p-3 bg-gray-100 rounded-lg border border-gray-200">
+                  <Clock className="h-5 w-5 text-gray-600" />
+                  <div>
+                    <span className="font-semibold text-gray-700">Weekend</span>
+                    <p className="text-xs text-gray-600">Regular weekend day</p>
+                  </div>
+                </div>
+              )}
+              
+              {!isWeekend(selectedDate) && !isHoliday(selectedDate) && !isOptimalLeaveDate(selectedDate) && (
+                <div className="flex items-center space-x-3 p-3 bg-blue-100 rounded-lg border border-blue-200">
+                  <CheckCircle className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <span className="font-semibold text-blue-700">Regular Working Day</span>
+                    <p className="text-xs text-blue-600">Standard attendance required</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </Card>
         )}
 
         {!publicHolidays && !isLoading && (
-          <div className="text-center py-8">
-            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">
+          <div className="text-center py-12">
+            <div className="relative">
+              <Calendar className="h-20 w-20 text-gray-400 mx-auto mb-6 animate-pulse" />
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Smart Calendar Ready</h3>
+            <p className="text-gray-600 max-w-md mx-auto">
               Load your attendance calculation to see smart holiday calendar with real holidays and AI recommendations.
             </p>
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .animate-fade-in-up {
+          animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .animate-scale-in {
+          animation: scaleIn 0.4s ease-out;
+        }
+        
+        .animate-slide-in {
+          animation: slideIn 0.5s ease-out;
+        }
+        
+        .animate-bounce-gentle {
+          animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+      `}</style>
     </Card>
   );
 };
