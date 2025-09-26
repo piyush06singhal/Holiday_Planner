@@ -175,20 +175,37 @@ const CalculatorPage = () => {
 
       const response = await backend.reports.generate(exportData);
       
-      // Create a blob from the response data
-      const blob = new Blob([response.fileContent], { 
-        type: format === 'pdf' ? 'text/html' : 'text/csv' 
-      });
-      
-      // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = response.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      if (format === 'pdf') {
+        // Convert HTML to PDF using browser's print to PDF functionality
+        const htmlContent = response.fileContent;
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+          
+          // Add print styles and trigger print dialog
+          printWindow.onload = () => {
+            setTimeout(() => {
+              printWindow.print();
+              printWindow.close();
+            }, 500);
+          };
+        }
+      } else {
+        // Handle CSV export normally
+        const blob = new Blob([response.fileContent], { 
+          type: 'text/csv' 
+        });
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = response.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
       
       toast({
         title: "📄 Export Ready!",

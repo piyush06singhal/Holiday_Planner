@@ -56,59 +56,53 @@ function getEnhancedRuleBasedResponse(message: string, userType: "student" | "em
   
   const lowerMessage = message.toLowerCase();
   
-  // Enhanced AI responses with calendar integration
+  // Concise AI responses with calendar integration
   if (lowerMessage.includes("when") || lowerMessage.includes("best time") || lowerMessage.includes("dates")) {
     if (attendanceData && attendanceData.safeLeaveDays > 0) {
-      response = `🎯 **AI Calendar Analysis Complete!** Based on your attendance data, here are the optimal leave periods:\n\n`;
+      response = `🎯 **Best Dates for You:**\n\n`;
       
       if (attendanceData.optimalLeaveDates && attendanceData.optimalLeaveDates.length > 0) {
-        response += `📅 **Top AI-Recommended Dates:**\n`;
-        attendanceData.optimalLeaveDates.slice(0, 3).forEach((date: any, index: number) => {
-          response += `${index + 1}. **${date.reason}**: ${new Date(date.startDate).toLocaleDateString()} - ${new Date(date.endDate).toLocaleDateString()} (${date.duration} days)\n   🎯 AI Score: ${date.aiScore}/100 - ${date.description}\n\n`;
+        attendanceData.optimalLeaveDates.slice(0, 2).forEach((date: any, index: number) => {
+          response += `${index + 1}. **${date.reason}**: ${new Date(date.startDate).toLocaleDateString()} - ${new Date(date.endDate).toLocaleDateString()} (Score: ${date.aiScore}/100)\n`;
           recommendedDates.push(`${date.startDate} to ${date.endDate}: ${date.reason}`);
         });
       }
       
-      // Add seasonal recommendations
+      // Quick seasonal tip
       const currentMonth = new Date().getMonth();
-      if (currentMonth >= 9 || currentMonth <= 1) { // Oct-Jan
-        response += `❄️ **Winter Season Strategy:** Perfect time for year-end holidays and festival celebrations.\n`;
-        recommendedDates.push("December 20-30: Year-end holidays");
-        recommendedDates.push("October 15-20: Diwali celebrations");
-      } else if (currentMonth >= 2 && currentMonth <= 5) { // Feb-May
-        response += `🌸 **Spring/Summer Strategy:** Ideal for travel and outdoor activities.\n`;
-        recommendedDates.push("March 10-15: Holi celebrations");
-        recommendedDates.push("April 15-25: Spring break travel");
+      if (currentMonth >= 9 || currentMonth <= 1) {
+        response += `\n❄️ **Winter Tip:** Great for year-end holidays!`;
+      } else if (currentMonth >= 2 && currentMonth <= 5) {
+        response += `\n🌸 **Spring Tip:** Perfect for outdoor travel!`;
       }
       
-      suggestions.push("Show me specific calendar dates");
-      suggestions.push("How to integrate with Google Calendar?");
-      suggestions.push("What are the risks of each date?");
+      suggestions.push("Show calendar integration");
+      suggestions.push("Export to Google Calendar");
+      suggestions.push("Check risk levels");
       
     } else {
-      response = `📊 **Calendar Integration Ready!** To provide you with specific dates and AI-optimized recommendations, please use our attendance calculator first. This will enable me to:\n\n✨ Generate personalized calendar dates\n📅 Integrate with your schedule\n🎯 Provide AI-scored recommendations\n⚡ Create ready-to-use calendar events`;
+      response = `📊 **Need Your Data First!** Use the calculator to get personalized dates and AI recommendations.`;
       
       suggestions.push("Go to Calculator");
-      suggestions.push("How does the AI calendar work?");
+      suggestions.push("How does AI work?");
       suggestions.push("What makes dates optimal?");
     }
   }
   
   // Calendar integration queries
   else if (lowerMessage.includes("calendar") || lowerMessage.includes("integration") || lowerMessage.includes("google") || lowerMessage.includes("outlook")) {
-    response = `📅 **AI Calendar Integration Features:**\n\n🔄 **Smart Sync**: Automatically sync your optimal leave dates with Google Calendar or Outlook\n🎯 **AI Recommendations**: Get intelligent suggestions for the best times to take breaks\n⚠️ **Risk Alerts**: Receive notifications before you risk attendance issues\n📱 **Mobile Ready**: Access your planning from any device\n\n`;
+    response = `📅 **Calendar Integration:** Sync your optimal dates with Google Calendar or Outlook for automatic reminders and planning.\n\n`;
     
     if (attendanceData && attendanceData.safeLeaveDays > 0) {
-      response += `🎉 **Ready for Integration!** With ${attendanceData.safeLeaveDays} safe leave days, I can help you create calendar events for:\n`;
-      response += `• Strategic long weekends\n• Festival celebrations\n• Mental health breaks\n• Extended vacation periods\n`;
+      response += `🎉 **Ready!** ${attendanceData.safeLeaveDays} safe days available for:\n• Long weekends • Festivals • Vacations • Mental health breaks`;
       
-      recommendedDates.push("Next Friday: Long weekend opportunity");
-      recommendedDates.push("Month-end: Strategic break period");
+      recommendedDates.push("Next Friday: Long weekend");
+      recommendedDates.push("Month-end: Strategic break");
     }
     
-    suggestions.push("Export my schedule to calendar");
-    suggestions.push("Set up automatic reminders");
-    suggestions.push("How to sync with mobile calendar?");
+    suggestions.push("Export to calendar");
+    suggestions.push("Set up reminders");
+    suggestions.push("Mobile sync guide");
   }
   
   // Specific date requests
@@ -201,11 +195,11 @@ function getEnhancedRuleBasedResponse(message: string, userType: "student" | "em
   
   // Default enhanced response
   else {
-    response = `🤖 **AI Holiday Planning Assistant Ready!** I'm your comprehensive calendar and attendance advisor with advanced features:\n\n🎯 **Core Capabilities:**\n📅 Smart calendar integration with Google/Outlook\n🗓️ AI-optimized leave date recommendations\n📊 Real-time attendance risk monitoring\n✨ Personalized holiday planning strategies\n🎉 Festival and public holiday optimization\n⚡ Instant calendar event creation\n\n🔥 **Popular Questions:**\n"When can I take my next vacation?"\n"Show me the best dates for a long weekend"\n"How to integrate with my Google Calendar?"\n"What's my attendance risk level?"\n\n💡 **Pro Tip:** Use our calculator first to unlock personalized calendar dates and AI recommendations!`;
+    response = `🤖 **AI Holiday Assistant!** I help you plan optimal leave dates with smart calendar integration.\n\n🎯 **What I Do:**\n• Find best vacation dates • Calendar sync • Risk monitoring • Smart recommendations\n\n💡 **Quick Start:** Use the calculator to get personalized dates!`;
     
-    suggestions.push("When can I take my next vacation?");
-    suggestions.push("Show me optimal holiday dates");
-    suggestions.push("How does AI calendar integration work?");
+    suggestions.push("When can I vacation?");
+    suggestions.push("Show optimal dates");
+    suggestions.push("Calendar integration help");
   }
   
   return {

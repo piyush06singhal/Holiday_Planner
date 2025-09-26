@@ -35,7 +35,7 @@ export const generate = api<ExportRequest, ExportResponse>(
     try {
       // Generate filename
       const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `ai-holiday-planner-${userInfo.userType}-${timestamp}.${format === 'pdf' ? 'html' : 'csv'}`;
+      const filename = `ai-holiday-planner-${userInfo.userType}-${timestamp}.${format === 'pdf' ? 'pdf' : 'csv'}`;
       
       // Generate enhanced AI summary
       const aiSummary = generateEnhancedAISummary(attendanceData, userInfo);
@@ -87,8 +87,8 @@ export const generate = api<ExportRequest, ExportResponse>(
       let fileContent: string;
       
       if (format === 'pdf') {
-        // Generate enhanced HTML content that can be saved as PDF
-        fileContent = generateEnhancedHTMLContent(reportContent);
+        // Generate PDF content using HTML template
+        fileContent = generatePDFContent(reportContent);
       } else {
         // Generate comprehensive CSV content for Excel
         fileContent = generateEnhancedCSVContent(reportContent);
@@ -107,61 +107,56 @@ export const generate = api<ExportRequest, ExportResponse>(
 );
 
 function generateEnhancedAISummary(attendanceData: any, userInfo: any): string {
-  const { safeLeaveDays, totalDays, requiredDays, attendanceRule } = attendanceData;
+  const { safeLeaveDays, totalDays, attendanceRule } = attendanceData;
   const { userType } = userInfo;
   
-  let summary = "🤖 **Advanced AI Analysis Summary:** ";
+  let summary = "🤖 **AI Quick Analysis:** ";
   
-  // Enhanced risk assessment with AI insights
+  // Simplified risk assessment
   if (safeLeaveDays <= 0) {
-    summary += "🚨 **CRITICAL RISK DETECTED:** AI analysis shows zero flexibility remaining. Immediate attendance focus required. ";
+    summary += "🚨 **CRITICAL:** Zero flexibility remaining. Perfect attendance required.";
   } else if (safeLeaveDays <= 3) {
-    summary += "⚠️ **HIGH RISK ZONE:** AI recommends maximum 1 consecutive day absence. Micro-management strategy advised. ";
+    summary += "⚠️ **HIGH RISK:** Only single-day absences recommended.";
   } else if (safeLeaveDays <= 7) {
-    summary += "🔶 **MODERATE RISK:** AI suggests strategic 2-day maximum absences with careful timing. ";
+    summary += "🔶 **MODERATE:** Plan 2-3 day breaks with careful timing.";
   } else if (safeLeaveDays <= 15) {
-    summary += "✅ **SAFE ZONE:** AI confirms good flexibility for strategic planning with proper spacing. ";
+    summary += "✅ **SAFE:** Good flexibility for strategic planning.";
   } else {
-    summary += "🌟 **OPTIMAL ZONE:** AI analysis shows excellent flexibility for creative holiday combinations. ";
+    summary += "🌟 **OPTIMAL:** Excellent flexibility for vacation planning.";
   }
   
-  // AI-powered attendance trend analysis
+  // Concise flexibility score
   const attendanceBuffer = (safeLeaveDays / totalDays) * 100;
-  summary += `📊 **Flexibility Score:** ${attendanceBuffer.toFixed(1)}% buffer available. `;
+  summary += ` 📊 **${attendanceBuffer.toFixed(0)}% flexibility buffer**. `;
   
-  if (attendanceBuffer < 5) {
-    summary += "AI recommends perfect attendance maintenance with emergency-only exceptions. ";
-  } else if (attendanceBuffer < 10) {
-    summary += "AI suggests conservative planning with 2-3 day advance booking windows. ";
-  } else if (attendanceBuffer < 20) {
-    summary += "AI enables moderate planning with weekly break opportunities. ";
-  } else {
-    summary += "AI unlocks advanced planning with monthly vacation windows. ";
-  }
-  
-  // Enhanced personalized recommendations based on user type
+  // Simple planning recommendation
   if (userType === "student") {
-    summary += `🎓 **Student-Optimized Strategy:** AI recommends coordinating with academic calendar for maximum benefit. `;
-    summary += `Focus on exam-period avoidance and semester-break optimization. `;
-    summary += `Utilize AI-suggested study-break timing for mental health maintenance. `;
+    summary += `🎓 **Student Tip:** Coordinate with academic calendar and avoid exam periods.`;
   } else {
-    summary += `💼 **Professional-Optimized Strategy:** AI suggests quarterly planning cycles with project-deadline awareness. `;
-    summary += `Coordinate with team schedules using AI-powered collaboration insights. `;
-    summary += `Leverage AI holiday optimization for maximum PTO efficiency. `;
+    summary += `💼 **Professional Tip:** Plan around project deadlines and team schedules.`;
   }
   
-  // AI strategic planning insights
-  if (safeLeaveDays > 20) {
-    summary += `🚀 **Elite Planning Mode:** AI enables 2-3 major vacation periods with strategic spacing for optimal recovery.`;
-  } else if (safeLeaveDays > 10) {
-    summary += `🎯 **Strategic Planning Mode:** AI recommends 1 major vacation plus monthly wellness breaks.`;
-  } else if (safeLeaveDays > 5) {
-    summary += `⚖️ **Balanced Planning Mode:** AI suggests quarterly long weekends with emergency reserves.`;
+  // Quick planning strategy
+  if (safeLeaveDays > 15) {
+    summary += ` 🚀 **Strategy:** Plan 2-3 major vacations with strategic spacing.`;
+  } else if (safeLeaveDays > 7) {
+    summary += ` 🎯 **Strategy:** One major vacation plus monthly breaks.`;
+  } else if (safeLeaveDays > 3) {
+    summary += ` ⚖️ **Strategy:** Quarterly long weekends with emergency reserves.`;
   } else if (safeLeaveDays > 0) {
-    summary += `🎱 **Precision Planning Mode:** AI requires exact timing with maximum impact focus.`;
+    summary += ` 🎱 **Strategy:** Precise timing for maximum impact.`;
   }
   
   return summary;
+}
+
+function generatePDFContent(reportContent: any): string {
+  // Generate PDF-optimized HTML content
+  const htmlContent = generateEnhancedHTMLContent(reportContent);
+  
+  // For now, return HTML that will be converted to PDF on the frontend
+  // In a real implementation, you would use a library like puppeteer or jsPDF
+  return htmlContent;
 }
 
 function generateEnhancedHTMLContent(reportContent: any): string {
