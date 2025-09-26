@@ -30,3 +30,39 @@ npm install
 
 # Run the app
 npm start
+
+```
+
+## 🏛️ Architecture
+
+The AI Holiday Planner follows a **modular architecture** with clear separation of frontend, backend, AI engine, and external APIs.
+
+```plaintext
++--------------------+
+|   User Interface   |
+|  (Web / Mobile)    |
++--------------------+
+          |
+          v
++--------------------+
+|    Frontend App    |
+| (React / Tailwind) |
++--------------------+
+          |
+          v
++--------------------+        +----------------------+
+|  Backend API Server| <----> |   External APIs      |
+| (Node.js / Flask)  |        | (Flights, Maps, etc)|
++--------------------+        +----------------------+
+          |
+          v
++--------------------+
+|     AI Engine      |
+| (NLP + Recommender)|
++--------------------+
+          |
+          v
++--------------------+
+|   Itinerary Output |
+|  (JSON / UI View)  |
++--------------------+
